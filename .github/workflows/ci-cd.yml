@@ -28,7 +28,7 @@ jobs:
         working-directory: services/${{ matrix.service }}
     steps:
       - name: Obtengo el codigo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Configuro Node.js
         uses: actions/setup-node@v4
         with:
@@ -52,7 +52,7 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Bloqueo dependencias vulnerables
         uses: actions/dependency-review-action@v4
         with:
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Construyo imagen de catalogo
         run: docker build --tag "ep2-catalog:${GITHUB_SHA}" services/catalog
       - name: Construyo imagen de inventario
@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -156,7 +156,7 @@ jobs:
     env:
       IMAGE_TAG: ${{ github.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Descargo las imagenes aprobadas
         uses: actions/download-artifact@v4
         with:
