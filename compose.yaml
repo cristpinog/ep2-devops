@@ -1,0 +1,62 @@
+name: ep2-devops
+
+services:
+  inventory:
+    image: ep2-inventory:${IMAGE_TAG:-local}
+    build:
+      context: ./services/inventory
+      target: runtime
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+    ports:
+      - "${INVENTORY_PORT:-3001}:3001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 100
+    mem_limit: 128m
+    cpus: 0.50
+    networks: [backend]
+
+  catalog:
+    image: ep2-catalog:${IMAGE_TAG:-local}
+    build:
+      context: ./services/catalog
+      target: runtime
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      INVENTORY_URL: http://inventory:3001
+    ports:
+      - "${CATALOG_PORT:-3000}:3000"
+    depends_on:
+      inventory:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 100
+    mem_limit: 128m
+    cpus: 0.50
+    networks: [backend]
+
+networks:
+  backend:
+    driver: bridge

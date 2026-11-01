@@ -1,0 +1,206 @@
+name: CI/CD EP2
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ep2-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Pruebas y cobertura
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [catalog, inventory]
+    defaults:
+      run:
+        working-directory: services/${{ matrix.service }}
+    steps:
+      - name: Obtengo el codigo
+        uses: actions/checkout@v4
+      - name: Configuro Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: services/${{ matrix.service }}/package-lock.json
+      - name: Instalo dependencias reproducibles
+        run: npm ci --ignore-scripts
+      - name: Verifico sintaxis
+        run: npm run check
+      - name: Ejecuto pruebas con umbral de cobertura
+        run: npm run test:coverage
+      - name: Bloqueo vulnerabilidades altas de dependencias
+        run: npm audit --audit-level=high
+
+  dependency-review:
+    name: Revision de dependencias del PR
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bloqueo dependencias vulnerables
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  docker-build:
+    name: Construccion Docker
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construyo imagen de catalogo
+        run: docker build --tag "ep2-catalog:${GITHUB_SHA}" services/catalog
+      - name: Construyo imagen de inventario
+        run: docker build --tag "ep2-inventory:${GITHUB_SHA}" services/inventory
+      - name: Registro metadatos trazables
+        run: |
+          mkdir -p evidence
+          {
+            echo "commit=${GITHUB_SHA}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            docker image inspect "ep2-catalog:${GITHUB_SHA}" --format 'catalog_image_id={{.Id}}'
+            docker image inspect "ep2-inventory:${GITHUB_SHA}" --format 'inventory_image_id={{.Id}}'
+          } > evidence/docker-build.txt
+      - name: Empaqueto exactamente las imagenes construidas
+        run: |
+          docker save "ep2-catalog:${GITHUB_SHA}" "ep2-inventory:${GITHUB_SHA}" \
+            | gzip -9 > "evidence/ep2-images-${GITHUB_SHA}.tar.gz"
+          cd evidence
+          sha256sum "ep2-images-${GITHUB_SHA}.tar.gz" > images.sha256
+      - name: Publico imagenes y evidencia de construccion
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-images-${{ github.sha }}
+          path: evidence/
+          retention-days: 30
+          compression-level: 0
+
+  security-snyk:
+    name: Seguridad bloqueante Snyk
+    needs: docker-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Descargo las imagenes construidas
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-images-${{ github.sha }}
+          path: image-artifact
+      - name: Verifico y cargo las mismas imagenes
+        run: |
+          cd image-artifact
+          sha256sum --check images.sha256
+          gzip -dc "ep2-images-${GITHUB_SHA}.tar.gz" | docker load
+      - name: Instalo Snyk con version fijada
+        run: npm ci --ignore-scripts
+      - name: Verifico el binario local de Snyk
+        run: |
+          installed_version=$(node -p "require('./node_modules/snyk/package.json').version")
+          reported_version=$(npx --no-install snyk --version | tail -n 1)
+          test "$installed_version" = "1.1308.3"
+          test "$reported_version" = "$installed_version"
+      - name: Verifico secreto requerido
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -z "$SNYK_TOKEN" ]; then
+            echo "::error::Falta configurar SNYK_TOKEN en GitHub Actions"
+            exit 1
+          fi
+      - name: Analizo dependencias
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: sh scripts/snyk-open-source.sh
+      - name: Analizo codigo fuente
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          npx --no-install snyk code test services/catalog --severity-threshold=high
+          npx --no-install snyk code test services/inventory --severity-threshold=high
+      - name: Analizo imagen de catalogo
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: npx --no-install snyk container test "ep2-catalog:${GITHUB_SHA}" --file=services/catalog/Dockerfile --severity-threshold=high
+      - name: Analizo imagen de inventario
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: npx --no-install snyk container test "ep2-inventory:${GITHUB_SHA}" --file=services/inventory/Dockerfile --severity-threshold=high
+
+  deploy-simulated:
+    name: Despliegue simulado y smoke tests
+    needs: [docker-build, security-snyk]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Descargo las imagenes aprobadas
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-images-${{ github.sha }}
+          path: image-artifact
+      - name: Verifico checksum, IDs y cargo las imagenes
+        run: |
+          cd image-artifact
+          sha256sum --check images.sha256
+          gzip -dc "ep2-images-${GITHUB_SHA}.tar.gz" | docker load
+          catalog_expected=$(sed -n 's/^catalog_image_id=//p' docker-build.txt)
+          inventory_expected=$(sed -n 's/^inventory_image_id=//p' docker-build.txt)
+          catalog_actual=$(docker image inspect "ep2-catalog:${GITHUB_SHA}" --format '{{.Id}}')
+          inventory_actual=$(docker image inspect "ep2-inventory:${GITHUB_SHA}" --format '{{.Id}}')
+          test "$catalog_expected" = "$catalog_actual"
+          test "$inventory_expected" = "$inventory_actual"
+      - name: Despliego los microservicios
+        run: docker compose up --detach --no-build --wait --wait-timeout 120
+      - name: Valido salud e integracion
+        run: |
+          curl --fail --silent --show-error http://127.0.0.1:3000/health
+          curl --fail --silent --show-error http://127.0.0.1:3001/health
+          curl --fail --silent --show-error http://127.0.0.1:3000/products/1/availability | tee integration-response.json
+      - name: Genero evidencia trazable
+        if: always()
+        run: |
+          mkdir -p evidence
+          docker compose ps --all > evidence/compose-ps.txt
+          docker compose logs --no-color > evidence/compose-logs.txt 2>&1
+          {
+            echo "commit=${GITHUB_SHA}"
+            echo "ref=${GITHUB_REF}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "deployed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > evidence/deployment-metadata.txt
+          if [ -f integration-response.json ]; then cp integration-response.json evidence/; fi
+      - name: Publico evidencia de despliegue
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulated-deployment-${{ github.sha }}
+          path: evidence/
+          retention-days: 30
+      - name: Retiro el entorno efimero
+        if: always()
+        run: docker compose down --volumes --remove-orphans

@@ -1,0 +1,9 @@
+{
+  "name": "ep2-devops-tooling",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Herramientas de seguridad reproducibles para EP2 DOY0101",
+  "devDependencies": {
+    "snyk": "1.1308.3"
+  }
+}

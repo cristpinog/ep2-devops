@@ -1,0 +1,14 @@
+{
+  "name": "ep2-catalog-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "API de catalogo de productos para EP2 DOY0101",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "start": "node src/server.js",
+    "check": "node --check src/server.js && node --check test/server.test.js",
+    "test": "node --test --test-isolation=none",
+    "test:coverage": "node --test --test-isolation=none --experimental-test-coverage --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80"
+  }
+}
