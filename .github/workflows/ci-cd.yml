@@ -85,7 +85,7 @@ jobs:
           cd evidence
           sha256sum "ep2-images-${GITHUB_SHA}.tar.gz" > images.sha256
       - name: Publico imagenes y evidencia de construccion
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docker-images-${{ github.sha }}
           path: evidence/
@@ -196,7 +196,7 @@ jobs:
           if [ -f integration-response.json ]; then cp integration-response.json evidence/; fi
       - name: Publico evidencia de despliegue
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: simulated-deployment-${{ github.sha }}
           path: evidence/
