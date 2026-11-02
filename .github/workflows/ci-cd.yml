@@ -104,7 +104,7 @@ jobs:
           node-version: '24'
           cache: npm
       - name: Descargo las imagenes construidas
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docker-images-${{ github.sha }}
           path: image-artifact
@@ -158,7 +158,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Descargo las imagenes aprobadas
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docker-images-${{ github.sha }}
           path: image-artifact
