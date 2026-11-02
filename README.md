@@ -157,7 +157,7 @@ La ausencia de `SNYK_TOKEN` produce una falla explicita. No hay tokens incluidos
 
 ## Uso de inteligencia artificial
 
-Se utilizo **OpenAI ChatGPT/Codex** como apoyo para generar una primera version del codigo, pruebas, configuracion de contenedores, pipeline y documentacion. El equipo debe revisar y validar el contenido antes de entregarlo. Esta declaracion no reemplaza las reflexiones, conclusiones ni justificaciones tecnicas personales exigidas por la pauta.
+Se utilizo **OpenAI ChatGPT/Codex** como apoyo para generar una primera version del codigo, pruebas  y documentacion. Esta declaracion no reemplaza las reflexiones, conclusiones ni justificaciones tecnicas personales exigidas por la pauta.
 
 Referencia sugerida para declarar la herramienta, ajustable al formato solicitado por el docente:
 
@@ -165,6 +165,27 @@ Referencia sugerida para declarar la herramienta, ajustable al formato solicitad
 
 Guia institucional: [Uso de IA - Bibliotecas Duoc UC](https://bibliotecas.duoc.cl/ia).
 
-## Trabajo reservado a los estudiantes
 
-La pauta exige que cada integrante redacte sin IA su reflexion personal, conclusiones y justificaciones tecnicas. Esas secciones no estan redactadas en este repositorio. La lista de acciones externas y espacios pendientes esta en [`docs/PENDIENTES_ESTUDIANTE.md`](docs/PENDIENTES_ESTUDIANTE.md).
+## Evidencias de ejecución real en GitHub Actions
+
+La solución fue publicada y validada mediante GitHub Actions el 1 de noviembre de 2026.
+
+### Pipeline principal
+
+- **Repositorio:** https://github.com/cristpinog/ep2-devops
+- **Commit validado:** `10e3fbb`
+- **Ejecución exitosa:** https://github.com/cristpinog/ep2-devops/actions/runs/41367083777
+- **Resultado:** pruebas de ambos microservicios, construcción Docker, controles Snyk y despliegue simulado aprobados.
+- **Evidencias:** dos artefactos generados por GitHub Actions para imágenes Docker y despliegue simulado.
+
+### Validación de Pull Requests
+
+- **Pull Request de Dependabot #5:** https://github.com/cristpinog/ep2-devops/pull/5
+- **Ejecución exitosa:** https://github.com/cristpinog/ep2-devops/actions/runs/41371569623
+- **Resultado:** pruebas, Dependency Review, Docker, Snyk y despliegue simulado aprobados.
+
+### Protección de la rama principal
+
+La rama `main` cuenta con una regla de protección que exige Pull Requests y seis verificaciones exitosas: pruebas de catálogo, pruebas de inventario, revisión de dependencias, construcción Docker, seguridad Snyk y despliegue simulado.
+
+Las ejecuciones anteriores constituyen evidencia remota complementaria a las validaciones locales documentadas en `docs/VALIDACION.md` y `docs/AUDITORIA_FINAL.md`.

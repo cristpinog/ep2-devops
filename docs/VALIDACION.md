@@ -1,6 +1,6 @@
 # Validacion tecnica de la version 1
-
-Este documento se completa con resultados reproducibles de la revision local. No sustituye la ejecucion del workflow en GitHub, porque Snyk y los artefactos remotos requieren el secreto y el repositorio configurado.
+GitHub, porqu
+Este documento registra las validaciones locales y las ejecuciones remotas realizadas en GitHub Actions. La implementación fue verificada mediante pruebas automatizadas, análisis de seguridad Snyk y despliegue simulado, con evidencias enlazadas al final del documento.
 
 ## Entorno usado
 
@@ -34,8 +34,8 @@ Este documento se completa con resultados reproducibles de la revision local. No
 | Snyk CLI | Version fijada 1.1308.3 instalada y ejecutable |
 | Instalacion limpia Snyk | Aprobada en contenedor Linux efimero con `npm ci --ignore-scripts` y `npx --no-install snyk --version` |
 | Snyk Open Source sin dependencias | Politica aprobada: valida manifiesto y lockfile, informa grafo vacio y activa `snyk test` automaticamente si aparecen dependencias |
-| Analisis Snyk | No ejecutado: requiere `SNYK_TOKEN` y proyecto Snyk del estudiante |
-| GitHub Actions | No ejecutado: requiere publicar los cambios y configurar el secreto |
+| Analisis Snyk | Aprobado en GitHub Actions: Snyk Code y Container ejecutados correctamente |
+| GitHub Actions | Aprobado: pipeline completo, despliegue simulado y evidencias generadas |
 
 ## Respuestas observadas en el despliegue local
 
@@ -46,3 +46,32 @@ Este documento se completa con resultados reproducibles de la revision local. No
 ```
 
 Los contenedores temporales se retiraron con `docker compose down --volumes --remove-orphans` despues de completar la revision.
+
+
+## Validacion remota en GitHub Actions
+
+### Pipeline principal
+
+- Repositorio: https://github.com/cristpinog/ep2-devops
+- Commit: `10e3fbb`
+- Ejecucion: https://github.com/cristpinog/ep2-devops/actions/runs/41367083777
+- Resultado: exitoso.
+- Pruebas, cobertura, construccion Docker, Snyk y despliegue simulado aprobados.
+- Se generaron dos artefactos de trazabilidad.
+
+### Validacion de Pull Requests
+
+- Pull Request #5: https://github.com/cristpinog/ep2-devops/pull/5
+- Ejecucion: https://github.com/cristpinog/ep2-devops/actions/runs/41371569623
+- Resultado: exitoso.
+- Aprobaron las pruebas, Dependency Review, construccion Docker, Snyk y despliegue simulado.
+
+### Proteccion de la rama principal
+
+Se configuro una regla de proteccion para `main` que exige Pull Requests y seis verificaciones exitosas antes de fusionar cambios.
+
+Configuracion: https://github.com/cristpinog/ep2-devops/settings/branches
+
+### Correccion de seguridad aplicada
+
+Se retiro npm global de las imagenes finales de catalogo e inventario, evitando incorporar las dependencias vulnerables detectadas inicialmente por Snyk. Las imagenes corregidas superaron posteriormente el analisis autenticado en GitHub Actions.

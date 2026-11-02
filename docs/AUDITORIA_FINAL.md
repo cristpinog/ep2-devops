@@ -75,7 +75,7 @@ dependency-review (control independiente y obligatorio para pull requests)
 - Ningun control bloqueante utiliza `continue-on-error`.
 - `dependency-review` se ejecuta solamente en pull requests y debe configurarse como check obligatorio de la rama.
 
-## Pendientes reales
+## Pendientes al finalizar la auditoría local (histórico)
 
 No fue posible ejecutar localmente estos controles externos:
 
@@ -86,3 +86,29 @@ No fue posible ejecutar localmente estos controles externos:
 5. Reflexiones, conclusiones y justificaciones tecnicas personales: deben ser redactadas por los estudiantes sin IA.
 
 No se realizo push ni se modifico el repositorio remoto EP1.
+
+
+## Actualización posterior a la publicación
+
+La evaluación fue publicada en GitHub y se completaron las verificaciones remotas que estaban pendientes durante la auditoría local.
+
+| Control | Resultado | Evidencia |
+|---|---|---|
+| Pipeline principal | Aprobado | https://github.com/cristpinog/ep2-devops/actions/runs/41367083777 |
+| Snyk Code y Container | Aprobados en CI | Ejecución principal |
+| Pruebas y construcción Docker | Aprobadas | Ejecución principal |
+| Despliegue simulado | Aprobado | Ejecución principal |
+| Dependency Review | Aprobado en PR #5 | https://github.com/cristpinog/ep2-devops/actions/runs/41371569623 |
+| Protección de main | Regla creada con seis checks obligatorios | Configuración del repositorio |
+
+### Corrección posterior a la auditoría local
+
+Snyk detectó vulnerabilidades de severidad alta y crítica en las dependencias de npm global incluidas en las imágenes base. Se modificaron ambos Dockerfiles para retirar npm y npx de la etapa final de ejecución, conservándolos en las etapas necesarias para instalar y probar los servicios.
+
+La corrección quedó publicada en el commit `10e3fbb`. Los análisis de seguridad y el despliegue simulado aprobaron posteriormente.
+
+### Pendientes de entrega académica
+
+- Revisar la documentación y completar los datos académicos correspondientes.
+- Incorporar las reflexiones, conclusiones y justificaciones personales exigidas por la pauta, redactadas por los estudiantes.
+- Entregar el enlace del repositorio mediante AVA y correo al docente.
