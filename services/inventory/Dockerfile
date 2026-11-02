@@ -12,7 +12,10 @@ ENV NODE_ENV=production \
     PORT=3001
 WORKDIR /app
 COPY --chown=node:node package*.json ./
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts \
+    && npm cache clean --force \
+    && rm -rf /usr/local/lib/node_modules/npm \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx
 COPY --from=test --chown=node:node /app/src ./src
 USER node
 EXPOSE 3001
