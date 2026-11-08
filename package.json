@@ -4,6 +4,6 @@
   "private": true,
   "description": "Herramientas de seguridad reproducibles para EP2 DOY0101",
   "devDependencies": {
-    "snyk": "1.1308.3"
+    "snyk": "1.1308.4"
   }
 }
